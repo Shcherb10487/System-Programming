@@ -1,0 +1,29 @@
+#include <iostream>
+#include<thread>
+#include<vector>
+#include<string>
+#include<mutex>
+#include <sstream>
+std::mutex cout_mutex;
+void printToVector(std::vector<std::string>& vect, const std::string& str) {
+	for (int i = 0;i < 10;i++) {
+		cout_mutex.lock();
+		std::stringstream ss;
+		ss << "Я строка студента Щербакова в потоке " << str << ", это моя " << i << " итерация\n";
+		vect.emplace_back(ss.str());
+		std::cout << vect.at(i);
+		cout_mutex.unlock();
+	}
+
+}
+
+int main() {
+	system("chcp 1251");
+	std::vector<std::string> vect;
+
+	std::thread t1(printToVector,ref(vect), "A");
+	std::thread t2(printToVector,ref(vect), "B");
+	t1.join();
+	t2.join();
+
+}
