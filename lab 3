@@ -1,0 +1,114 @@
+#include <iostream>
+#include <vector>
+#include <thread>
+
+void random(std::vector<short>& vect) {
+	for (int i = 0;i < vect.size();i++) vect.at(i) = rand() % 100;
+}
+void print(std::vector<short>& vect) {
+	for (auto i : vect) std::cout << i << " ";
+	std::cout << "\n";
+}
+std::vector<short>& bubble(std::vector<short>& vect) {
+	for (int j = 0;j < vect.size()-1;j++) {
+		for (int i = 0;i < vect.size()-j-1;i++) {
+			if (vect.at(i) > vect.at(i + 1)) std::swap(vect.at(i), vect.at(i + 1));
+
+		}
+	}
+	return vect;
+}
+void timer(std::vector<short>&(*func)(std::vector<short>&), std::vector<short>& vect, std::string message) {
+	time_t start = clock(), finish = clock();
+	func(vect);
+	finish = clock();
+	std::cout << message << " : " << (finish - start) / 1000.0 << " sec\n";
+	
+}
+
+size_t sep_func(std::vector<short>& vect, size_t start, size_t finish) {
+	size_t i = start, j = start-1;
+	for (; i < finish; i++) {
+		if (vect.at(i) <= vect.at(finish - 1)) {
+			j++;
+			std::swap(vect.at(i), vect.at(j));
+		}
+	}
+	return j;
+}
+std::vector <short>& Pivot(std::vector<short>& vect, size_t start, size_t finish) {
+	if (start < finish) {
+		size_t pivot = sep_func(vect, start, finish);
+		Pivot(vect, start, pivot);
+		Pivot(vect, pivot+1, finish);
+		return vect;
+	}
+}
+std::vector<short>& QuickSort(std::vector<short>& vect) {
+	Pivot(vect, 0, vect.size());
+	return vect;
+}
+
+bool AreSame(const std::vector<short>& vect1, const std::vector<short>& vect2) {
+	bool same = true;
+	for (int i = 0;i < vect1.size(); i++) {
+		if (vect1.at(i) != vect2.at(i)) {
+			std::cout << i << " ";
+			same = false;
+		}
+	}
+	if (same) std::cout << "\nВектора одинаковы\n";
+	else std::cout << "\nВектора разыне\n";
+	return same;
+}
+void myMerging(std::vector<short>& vect, size_t start, size_t finish) {
+	std::vector<short>buffer;
+	size_t left_index = start, right_index = start + ((finish - start) / 2);
+	for (int i = 0; i < finish; i++) {
+		if (i < ((finish - start) / 2)) buffer.push_back(vect.at(i));
+		if (!buffer.empty()) {
+			if (vect.at(right_index) <= buffer.at(0)) {
+				vect.at(i) = vect.at(right_index);
+				if (right_index < vect.size() - 1) right_index++;
+				else vect.at(right_index) = buffer.back();
+			}
+			else {
+				vect.at(i) = buffer.front();
+				buffer.erase(buffer.begin());
+			}
+		}
+	}
+}
+
+std::vector<short>& threadSort(std::vector<short>& vect) {
+	int cores = 2;
+	int chunk = vect.size() / cores;
+	std::vector<std::thread> threads;
+	for (int i = 0;i < cores;i++) {
+		int start = i * chunk;
+		int end = (i == (cores - 1)) ? vect.size() : (i + 1) * chunk;
+		threads.emplace_back(std::thread(Pivot, ref(vect), start, end));
+
+		
+	}
+	for (auto& th : threads) if (th.joinable()) th.join();
+	myMerging(vect, 0, vect.size());
+	return vect;
+}
+int main() {
+	system("chcp 1251");
+	srand(int(time(0)));
+	std::vector<short> vect(50000);
+
+	random(vect);
+	std::vector<short>vect1 = vect, vect2 = vect, vect3 = vect;
+	timer(bubble, vect1, "Bubble sort: ");
+	//print(vect1);
+	timer(QuickSort, vect2, "\nQuick sort: ");
+	//print(vect2);
+	timer(threadSort, vect3, "\nThread sort: ");
+	//print(vect3);
+	AreSame(vect2, vect3);
+	AreSame(vect1, vect3);
+	//AreSame(vect3, vect2);
+}	
