@@ -1,1 +1,110 @@
 
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <thread>
+#include <string>
+#include <mutex>
+std::mutex mutexx;
+void copypaste(std::string start, std::string result) {
+	std::ifstream in;
+	std::ofstream out;
+	std::vector<std::string> str;
+	std::string temp;
+	in.open(start);
+	if (in.is_open()) {
+		while (std::getline(in, temp)) {
+			str.emplace_back(temp);
+		}
+		
+	}
+	in.close();
+
+	mutexx.lock();
+	out.open(result, std::ios::app | std::ios::ate);
+	if (out.is_open()) for (auto i : str) out << i << std::endl;
+	out.close();
+	mutexx.unlock();
+}
+
+void search_in_vector(std::vector <std::string>& vect, std::string name, std::string infilename, std::string outfilename, int start, int end) {
+	std::cout << "Search is started\n";
+	std::string temp;
+	mutexx.lock();
+	std::ifstream in(infilename);
+	if (in.is_open())
+	{
+		std::cout << "Cycle is started\n";
+		for (int i = start; i < end; i++) {
+			std::getline(in, temp);
+			vect.emplace_back(temp);
+			std::cout << vect.at(i) << "\n";
+		}
+	}
+	else std::cout << "File doesent open!\n";
+	in.close();
+	mutexx.unlock();
+		std::cout << "-------------";
+
+	for (int i = start;i < end;i++) {
+	if (vect.at(i).substr(0, name.length()) == name) {
+		mutexx.lock();
+		std::ofstream out(outfilename, std::ios::app);
+		out << vect.at(i) << "\n";
+		out.close();
+		mutexx.unlock();
+	}
+	}
+}
+int main() {
+	system("chcp 1251");
+
+	std::vector<std::string> files = {"file0.txt", "file1.txt", "file2.txt","file3.txt"};
+	std::vector<std::thread> threads;
+		
+	//Задание 1
+	//
+	//time_t t_start = clock();
+	//for (auto i: files) threads.push_back(std::thread(copypaste, i, "output.txt"));
+	//for (auto& i: threads) i.join();
+	//time_t t_end = clock();
+	//std::cout << (t_end - t_start) / 1000 << " sec";
+	//if ((t_end - t_start) / 1000 > 80) std::cout << "\n !!!Время больше максимального";
+	//
+	//system("pause");
+	//
+	//
+
+	//Задание 2
+	std::vector <std::string> vect;
+	std::cout << "\nВведите имя: ";
+	std::string name;
+	std::cin >> name;
+	time_t start2 = clock();
+	name += " ";
+	threads.clear();
+	
+
+	int cores = 4;
+	int chunk = (int)vect.size() / cores;
+
+	for (int i = 0;i < cores;i++) {
+		int start = chunk * i;
+		int end = start + chunk;
+		threads.push_back(std::thread(search_in_vector, std::ref(vect), name,"output.txt", "name.txt", start, end));
+	}
+	for (int i = 0;i < threads.size();i++) {
+		threads.at(i).join();
+	}
+
+	time_t t_end2 = clock();
+	std::cout << (t_end2 - start2) / 1000 << " sec";
+	if ((t_end2 - start2) / 1000 > 4) std::cout << "\n !!!Время больше максимального";
+
+
+	//Задание 3
+
+
+
+
+}
