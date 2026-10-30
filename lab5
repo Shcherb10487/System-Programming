@@ -4,8 +4,20 @@
 #include <thread>
 #include <string>
 #include <mutex>
+#include <charconv>
+
 std::mutex mutexx;
-void copypaste(std::string start, std::string result) {
+struct obj {
+	std::string name;
+	int value;
+	std::string modifier;
+	//obj(std::string name, int value, std::string mod) :name(name),value(value), modifier(mod) {}
+	void fileOut(std::ofstream& out) {
+		out << name << " " << value << " " << modifier << "\n";
+	}
+		
+};
+void copyPaste(std::string start, std::string result) {
 	std::ifstream in;
 	std::ofstream out;
 	std::vector<std::string> str;
@@ -27,46 +39,72 @@ void copypaste(std::string start, std::string result) {
 	str.clear();
 }
 
-void search_in_vector(std::vector<std::string>& output, std::string name, int start, int end) {
-	std::vector <std::string>vect;
+void searchInVector(std::vector<obj>& output, std::string name, int start, int end) {
 	for (int i = start;i < end;i++) {
-		if (output.at(i).substr(0, name.length()) == name) vect.push_back(output.at(i));
-	}
-
-	mutexx.lock();
-	std::ofstream out("name.txt", std::ios::app);
-	if (out.is_open()) {
-		for (std::string i : vect) {
-			out << i << "\n";
+		if (output.at(i).name == name) {
+			mutexx.lock();
+			std::ofstream out("name.txt", std::ios::app);
+			if (out.is_open()) output.at(i).fileOut(out);
+			out.close();
+			mutexx.unlock();
 		}
 	}
-	out.close();
-	mutexx.unlock();
 }
 
-void average(std::vector<std::string> output, std::vector<int>& nums, int dia_start, int dia_end) {
-	int average = 0;
+void loadFromFile(std::vector<obj>& records){
+	std::ifstream in("output.txt");
+	records.reserve(40000000);
+	obj r;
+	std::string line;
+	while (std::getline(in, line)) {
+		const char* p = line.data();
+		const char* end = p + line.size();
+
+		const char* name_beg = p;
+		while (p < end && *p != ' ') p++;
+		const char* name_end = p;
+
+		while (p < end && *p == ' ') p++;
+
+		const char* valBeg = p;
+		while (p < end && *p != ' ') p++;
+
+		int value = 0.0;
+		std::from_chars(valBeg, p, value);
+
+		while (p < end && *p == ' ') p++;
+
+		const char* mod_beg = p;
+		const char* mod_end = end;
+		while (mod_end > mod_beg && mod_end[-1] == '\n') mod_end--;
+
+		r.name.assign(name_beg, name_end);
+		r.value = value;
+		r.modifier.assign(mod_beg, mod_end);
+		records.push_back(std::move(r));
+	}
+}
+
+void average(std::vector<obj>& output, std::vector<long>& nums, int dia_start, int dia_end) {
+	long average = 0;
 	for (int i = dia_start; i < dia_end;i++) {
-		int start = output.at(i).find(" ");
-		int end = output.at(i).rfind(" ");
-		average += std::stoi(output.at(i).substr(start, end - start));
+		average += output.at(i).value;
 	}
 	nums.emplace_back(average/(dia_end - dia_start));
 }
-
-void more_Than_Average(std::vector<std::string> output, int average_num, int dia_start, int dia_end){
+	
+void moreThanAverage(std::vector<obj>& output, long average_num, int dia_start, int dia_end){
 	for (int i = dia_start; i < dia_end;i++) {
-		int start = output.at(i).find(" ");
-		int end = output.at(i).rfind(" ");
-		if (average_num < std::stoi(output.at(i).substr(start, end - start))) {
+		if (average_num < output.at(i).value) {
 			mutexx.lock();
 			std::ofstream out("more_than_avg.txt", std::ios::app);
-			if (out.is_open()) out << output.at(i) << "\n";
+			if (out.is_open()) output.at(i).fileOut(out);
 			out.close();			
 			mutexx.unlock();
 		}
 	}
 }
+
 int main() {
 	system("chcp 1251");
 
@@ -75,76 +113,76 @@ int main() {
 
 	//Задание 1
 
-	//time_t t_start = clock();
-	//for (auto i: files) threads.push_back(std::thread(copypaste, i, "output.txt"));
-	//for (auto& i: threads) i.join();
-	//time_t t_end = clock();
-	//std::cout << (t_end - t_start) / 1000 << " sec";
-	//if ((t_end - t_start) / 1000 > 80) std::cout << "\n !!!Время больше максимального";
+	/*time_t t_start = clock();
+	for (auto i: files) threads.push_back(std::thread(copyPaste, i, "output.txt"));
+	for (auto& i: threads) i.join();
+	time_t t_end = clock();
+	std::cout << (t_end - t_start) / 1000 << " sec";
+	if ((t_end - t_start) / 1000 > 80) std::cout << "\n !!!Время больше максимального";
 
-	//system("pause");
+	system("pause");*/
 
 	//Задание 2
-	
-	std::vector<std::string>output;
-	std::string temp;
-	std::ifstream in("output.txt");
-	while (std::getline(in, temp)) output.push_back(temp);
+	std::vector <obj> output;
+	loadFromFile(output);
 	int cores = 4;
 	int chunk = (int)output.size() / cores;
 
-	/*
-		threads.clear();
-		std::cout << "\nВведите имя: ";
-		std::string name;
-		std::cin >> name;
+	
+	/*threads.clear();
+	std::cout << "\nВведите имя: ";
+	std::string name;
+	std::cin >> name;
 
-		time_t start2 = clock();
-		name += " ";
+	time_t start2 = clock();
 		
 
-		for (int i = 0;i < cores;i++) {
-			int start = chunk * i;
-			int end = start + chunk;
-			threads.emplace_back(std::thread(search_in_vector, std::ref(output), name, start, end));
-		}
-		for (int i = 0;i < threads.size();i++) {
-			threads.at(i).join();
-		}
+	for (int i = 0;i < cores;i++) {
+		int start = chunk * i;
+		int end = start + chunk;
+		threads.emplace_back(std::thread(searchInVector, std::ref(output), name, start, end));
+	}
+	for (int i = 0;i < threads.size();i++) {
+		threads.at(i).join();
+	}
 
-		time_t t_end2 = clock();
-		std::cout << (t_end2 - start2) / 1000 << " sec";
-		if ((t_end2 - start2) / 1000 > 4) std::cout << "\n !!!Время больше максимального";
+	time_t t_end2 = clock();
+	std::cout << (t_end2 - start2) / 1000 << " sec";
+	if ((t_end2 - start2) / 1000 > 4) std::cout << "\n !!!Время больше максимального";
 
-		system("pause");
-	*/
+	system("pause");*/
+	
+	
 
 	//Задание 3
 	std::cout << "\nНачало работы 3 задания\n";
 	threads.clear();
-	std::vector<int>nums;
 	time_t start3 = clock();
 	std::cout << "\nТаймер начался";
+	std::vector <long> nums;
 	for (int i = 0;i < cores;i++) {
 		int start = chunk * i;
 		int end = start + chunk;
-		threads.emplace_back(std::thread(average, output, std::ref(nums), start, end));
+		threads.emplace_back(std::thread(average, std::ref(output), std::ref(nums), start, end));
 	}
 	for (int i = 0;i < threads.size();i++) {
 		threads.at(i).join();
 	}
-	int average_num = 0;
-	for (int i : nums) average_num += i;
-	average_num /= nums.size();
+
+	long average = 0;
+	for (auto i : nums) average += i;
+	average /= nums.size();
+
 	threads.clear();
 	for (int i = 0;i < cores;i++) {
 		int start = chunk * i;
 		int end = start + chunk;
-		threads.emplace_back(std::thread(more_Than_Average, output, average_num, start, end));
+		threads.emplace_back(std::thread(moreThanAverage, ref(output), average, start, end));
 	}
 	for (int i = 0;i < threads.size();i++) {
 		threads.at(i).join();
 	}
+	
 
 	time_t t_end3 = clock();
 	std::cout << (t_end3 - start3) / 1000 << " sec";
