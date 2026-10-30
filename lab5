@@ -15,7 +15,7 @@ struct obj {
 	void fileOut(std::ofstream& out) {
 		out << name << " " << value << " " << modifier << "\n";
 	}
-		
+
 };
 void copyPaste(std::string start, std::string result) {
 	std::ifstream in;
@@ -51,7 +51,7 @@ void searchInVector(std::vector<obj>& output, std::string name, int start, int e
 	}
 }
 
-void loadFromFile(std::vector<obj>& records){
+void loadFromFile(std::vector<obj>& records) {
 	std::ifstream in("output.txt");
 	records.reserve(40000000);
 	obj r;
@@ -90,19 +90,7 @@ void average(std::vector<obj>& output, std::vector<long>& nums, int dia_start, i
 	for (int i = dia_start; i < dia_end;i++) {
 		average += output.at(i).value;
 	}
-	nums.emplace_back(average/(dia_end - dia_start));
-}
-	
-void moreThanAverage(std::vector<obj>& output, long average_num, int dia_start, int dia_end){
-	for (int i = dia_start; i < dia_end;i++) {
-		if (average_num < output.at(i).value) {
-			mutexx.lock();
-			std::ofstream out("more_than_avg.txt", std::ios::app);
-			if (out.is_open()) output.at(i).fileOut(out);
-			out.close();			
-			mutexx.unlock();
-		}
-	}
+	nums.emplace_back(average / (dia_end - dia_start));
 }
 
 int main() {
@@ -113,14 +101,14 @@ int main() {
 
 	//Задание 1
 
-	/*time_t t_start = clock();
+	time_t t_start = clock();
 	for (auto i: files) threads.push_back(std::thread(copyPaste, i, "output.txt"));
 	for (auto& i: threads) i.join();
 	time_t t_end = clock();
 	std::cout << (t_end - t_start) / 1000 << " sec";
 	if ((t_end - t_start) / 1000 > 80) std::cout << "\n !!!Время больше максимального";
 
-	system("pause");*/
+	system("pause");
 
 	//Задание 2
 	std::vector <obj> output;
@@ -128,14 +116,14 @@ int main() {
 	int cores = 4;
 	int chunk = (int)output.size() / cores;
 
-	
-	/*threads.clear();
+
+	threads.clear();
 	std::cout << "\nВведите имя: ";
 	std::string name;
 	std::cin >> name;
 
 	time_t start2 = clock();
-		
+
 
 	for (int i = 0;i < cores;i++) {
 		int start = chunk * i;
@@ -150,9 +138,9 @@ int main() {
 	std::cout << (t_end2 - start2) / 1000 << " sec";
 	if ((t_end2 - start2) / 1000 > 4) std::cout << "\n !!!Время больше максимального";
 
-	system("pause");*/
-	
-	
+	system("pause");
+
+
 
 	//Задание 3
 	std::cout << "\nНачало работы 3 задания\n";
@@ -173,17 +161,12 @@ int main() {
 	for (auto i : nums) average += i;
 	average /= nums.size();
 
-	threads.clear();
-	for (int i = 0;i < cores;i++) {
-		int start = chunk * i;
-		int end = start + chunk;
-		threads.emplace_back(std::thread(moreThanAverage, ref(output), average, start, end));
+	std::ofstream out("more_than_avg.txt");
+	if (out.is_open()) {
+		for (int i=0;i<output.size();i++)
+			if (output.at(i).value > average) { output.at(i).fileOut(out); }
+		out.close();
 	}
-	for (int i = 0;i < threads.size();i++) {
-		threads.at(i).join();
-	}
-	
-
 	time_t t_end3 = clock();
 	std::cout << (t_end3 - start3) / 1000 << " sec";
 	if ((t_end3 - start3) / 1000 > 40) std::cout << "\n !!!Время больше максимального";
