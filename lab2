@@ -1,0 +1,50 @@
+#include <iostream>
+#include <vector>
+#include <thread>
+
+void myInit(std::vector<int>& vec, int start, int end) {
+	for (int i = start; i <= end; ++i) vec.at(i) = rand() % 1000;
+}
+
+int main() {
+	srand(int(time(0)));
+	std::vector <int> vec(1000000000);
+
+	//Задание 1 (44 sec)
+	/*
+	time_t start = clock();
+	for (size_t i = 0; i < vec.size(); ++i) vec.at(i) = rand() % 1000;
+
+	time_t end = clock();
+	std::cout << (end - start) / 1000 << " sec";
+	*/
+
+
+	//Задание 2 (39 sec)
+	/*
+	time_t start = clock();
+	myInit(vec, 0, vec.size() - 1);
+	time_t end = clock();
+	std::cout << (end - start) / 1000 << " sec";
+	*/
+	
+
+	//Задание 3 и 4 (6 sec)
+	/*
+	time_t start = clock();
+	int count_threads = std::thread::hardware_concurrency();
+	std::cout << " found: " << count_threads << " cores, ";//12
+	int amount = vec.size() / count_threads;
+	std::vector<std::thread> threads;
+	for (int i = 0; i < count_threads; i++) {
+		int start_indx = i * amount;
+		int end_indx = (i + 1) * amount - 1;
+		if (i == count_threads - 1) end_indx = vec.size() - 1;
+		threads.push_back(std::thread(myInit, std::ref(vec), start_indx, end_indx));
+	}
+	for (auto& th : threads) if (th.joinable()) th.join();
+	time_t end = clock();
+	std::cout << (end - start) / 1000 << " sec;
+	*/
+
+}
