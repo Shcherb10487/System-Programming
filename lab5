@@ -69,7 +69,7 @@ void loadFromFile(std::vector<obj>& records) {
 		const char* valBeg = p;
 		while (p < end && *p != ' ') p++;
 
-		int value = 0.0;
+		int value = 0;
 		std::from_chars(valBeg, p, value);
 
 		while (p < end && *p == ' ') p++;
